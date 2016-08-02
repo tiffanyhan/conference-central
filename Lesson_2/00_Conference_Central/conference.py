@@ -33,6 +33,8 @@ from models import TeeShirtSize
 
 from settings import WEB_CLIENT_ID
 
+from utils import getUserId
+
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 
@@ -75,15 +77,21 @@ class ConferenceApi(remote.Service):
         ## you can use user.nickname() to get displayName
         ## and user.email() to get mainEmail
         else:
-            profile = Profile(
-                userId = None,
-                key = None,
-                displayName = user.nickname(),
-                mainEmail= user.email(),
-                teeShirtSize = str(TeeShirtSize.NOT_SPECIFIED),
-            )
+            user_id = getUserId(user)
+            profile_key = ndb.Key(Profile, user_id)
 
-        return profile      # return Profile
+            profile = profile_key.get()
+
+            if not profile:
+                profile = Profile(
+                    key = profile_key,
+                    displayName = user.nickname(),
+                    mainEmail= user.email(),
+                    teeShirtSize = str(TeeShirtSize.NOT_SPECIFIED),
+                )
+                profile.put()
+
+            return profile      # return Profile
 
 
     def _doProfile(self, save_request=None):
@@ -98,6 +106,7 @@ class ConferenceApi(remote.Service):
                     val = getattr(save_request, field)
                     if val:
                         setattr(prof, field, str(val))
+            prof.put()
 
         # return ProfileForm
         return self._copyProfileToForm(prof)
