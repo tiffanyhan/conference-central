@@ -77,9 +77,10 @@ FIELDS =    {
             'MAX_ATTENDEES': 'maxAttendees',
             }
 
+# ResourceContainers support path arguments.
 CONF_GET_REQUEST = endpoints.ResourceContainer(
-    message_types.VoidMessage,
-    websafeConferenceKey=messages.StringField(1),
+    message_types.VoidMessage,# a message passed in as the first argument
+    websafeConferenceKey=messages.StringField(1), # parameter to add to URL passed in as second argument
 )
 
 CONF_POST_REQUEST = endpoints.ResourceContainer(
@@ -336,6 +337,7 @@ class ConferenceApi(remote.Service):
             http_method='POST', name='queryConferences')
     def queryConferences(self, request):
         """Query for conferences."""
+        print(request)
         conferences = self._getQuery(request)
 
          # return individual ConferenceForm object per Conference
@@ -476,6 +478,12 @@ class ConferenceApi(remote.Service):
     def registerForConference(self, request):
         """Register user for selected conference."""
         return self._conferenceRegistration(request)
+
+    @endpoints.method(CONF_GET_REQUEST, BooleanMessage,
+        path='unregisterFromConference',
+        http_method='POST', name='unregisterFromConference')
+    def unregisterFromConference(self, request):
+        return self._conferenceRegistration(request, reg=False)
 
 # - - - Announcements - - - - - - - - - - - - - - - - - - - -
 
