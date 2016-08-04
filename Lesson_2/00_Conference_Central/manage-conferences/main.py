@@ -15,11 +15,27 @@
 # limitations under the License.
 #
 import webapp2
+from google.appengine.api import app_identity
+from google.appengine.api import mail
+from conference import ConferenceApi
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         self.response.write('Hello world!')
 
+class SetAnnouncementHandler(webapp2.RequestHandler):
+    def get(self):
+        """Set Announcement in Memcache."""
+        # TODO 1
+        self.response.write('Hello World!')
+        #_cacheAnnouncement()
+
+class TestHandler(webapp2.RequestHandler):
+	def get(self):
+		self.response.write('test!')
+
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', MainHandler),
+    ('/crons/set_announcement', SetAnnouncementHandler),
+    ('/test', TestHandler)
 ], debug=True)
