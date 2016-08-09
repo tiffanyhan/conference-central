@@ -39,10 +39,13 @@ from models import ConferenceForms
 from models import ConferenceQueryForm
 from models import ConferenceQueryForms
 
+from models import Session
+from models import SessionForm
+
 from models import BooleanMessage
 from models import ConflictException
-
 from models import StringMessage
+from models import websafeConferenceKey
 
 from settings import WEB_CLIENT_ID
 
@@ -85,6 +88,16 @@ CONF_GET_REQUEST = endpoints.ResourceContainer(
 
 CONF_POST_REQUEST = endpoints.ResourceContainer(
     ConferenceForm,
+    websafeConferenceKey=messages.StringField(1),
+)
+
+SESS_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeConferenceKey=messages.StringField(1),
+)
+
+SESS_POST_REQUEST = endpoints.ResourceContainer(
+    SessionForm,
     websafeConferenceKey=messages.StringField(1),
 )
 
@@ -255,6 +268,46 @@ class ConferenceApi(remote.Service):
         )
 
         return request
+
+    @ndb.transactional()
+    def _updateConferenceObject(self, request):
+        user = endpoints.get_current_user()
+        if not user:
+            raise endpoints.UnauthorizedException('Authorization required')
+        user_id = getUserId(user)
+
+        # copy ConferenceForm/ProtoRPC Message into dict
+        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+
+        # update existing conference
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        # check that conference exists
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+
+        # check that user is owner
+        if user_id != conf.organizerUserId:
+            raise endpoints.ForbiddenException(
+                'Only the owner can update the conference.')
+
+        # Not getting all the fields, so don't create a new object; just
+        # copy relevant fields from ConferenceForm to Conference object
+        for field in request.all_fields():
+            data = getattr(request, field.name)
+            # only copy fields where we get data
+            if data not in (None, []):
+                # special handling for dates (convert string to Date)
+                if field.name in ('startDate', 'endDate'):
+                    data = datetime.strptime(data, "%Y-%m-%d").date()
+                    if field.name == 'startDate':
+                        conf.month = data.month
+                # write to Conference object
+                setattr(conf, field.name, data)
+        conf.put()
+        prof = ndb.Key(Profile, user_id).get()
+        return self._copyConferenceToForm(conf, getattr(prof, 'displayName'))
+
 
     def _getQuery(self, request):
         """Return formatted query from the submitted filters."""
@@ -473,7 +526,7 @@ class ConferenceApi(remote.Service):
 
 
     @endpoints.method(CONF_GET_REQUEST, BooleanMessage,
-            path='conference/{websafeConferenceKey}',
+            path='conference/details/{websafeConferenceKey}',
             http_method='POST', name='registerForConference')
     def registerForConference(self, request):
         """Register user for selected conference."""
@@ -484,6 +537,55 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='unregisterFromConference')
     def unregisterFromConference(self, request):
         return self._conferenceRegistration(request, reg=False)
+
+# - - - Sessions - - - - - - - - - - - - - - - - - - - - - -
+
+    def _createSessionObject(self, request):
+        """Create Session Object."""
+        # make sure user is authed
+        user = endpoints.get_current_user()
+        if not user:
+            raise endpoints.UnauthorizedException('Authorization required')
+
+        user_id = getUserId(user)
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        conf_user_id = conf.organizerUserId
+
+        if user_id != conf_user_id:
+            raise endpoints.ForbiddenException(
+                'Only the owner can add a session to the conference.')
+
+        if not request.sessionName:
+            raise endpoints.BadRequestException("Session 'name' field required")
+
+        # copy SessionForm protoRPC message into a dict
+        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+        del data['websafeConferenceKey']
+
+        # convert dates from strings to Date Objects
+        # TODO: convert time from strings to Time objects
+        if data['date']:
+            data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
+        # convert time from string to Time object
+
+        conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        # allocate new Session Id with Profile key as parent
+        session_id = Session.allocate_ids(size=1, parent=conf_key)[0]
+        # make Session key from ID
+        session_key = ndb.Key(Session, session_id, parent=conf_key)
+        data['key'] = session_key
+
+        session = Session(**data)
+        session.put()
+
+        return websafeConferenceKey(data=request.websafeConferenceKey)
+
+    @endpoints.method(SESS_POST_REQUEST, websafeConferenceKey, path='conference/{websafeConferenceKey}',
+        http_method='POST', name='createSession')
+    def createSession(self, request):
+        """Create new session."""
+        return self._createSessionObject(request)
+
 
 # - - - Announcements - - - - - - - - - - - - - - - - - - - -
 

@@ -120,3 +120,56 @@ class ConferenceQueryForms(messages.Message):
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     data = messages.StringField(1, required=True)
+
+# - - - Conference sessions - - - - - - - - - - - - - - - - - - - - - -
+
+class Session(ndb.Model):
+    """Session -- Session object"""
+    sessionName     = ndb.StringProperty(required=True)
+    highlights      = ndb.StringProperty(repeated=True)
+    speaker         = ndb.StringProperty()
+    duration        = ndb.IntegerProperty()
+    typeOfSession   = ndb.StringProperty()
+    date            = ndb.DateProperty()
+    startTime       = ndb.TimeProperty()
+    organizerUserId = ndb.StringProperty()
+
+class SessionForm(messages.Message):
+    """SessionForm -- Session outbound form message"""
+    sessionName         = messages.StringField(1)
+    highlights          = messages.StringField(2, repeated=True)
+    speaker             = messages.StringField(3)
+    duration            = messages.IntegerField(4)
+    typeOfSession       = messages.StringField(5)
+    date                = messages.StringField(6)
+    startTime           = messages.StringField(7)
+    #want to define other fields?
+
+class websafeConferenceKey(messages.Message):
+    data = messages.StringField(1, required=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
