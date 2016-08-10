@@ -158,5 +158,8 @@ class SessionQueryForms(messages.Message):
     """SessionQueryForms -- multiple SessionQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
 
-class ConferenceSessionsByTypeForm(messages.Message):
+class SessionsByTypeForm(messages.Message):
     typeOfSession = messages.StringField(1)
+
+class SessionsBySpeakerForm(messages.Message):
+    speaker = messages.StringField(1)
