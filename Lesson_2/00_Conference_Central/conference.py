@@ -45,6 +45,8 @@ from models import SessionForm
 from models import SessionForms
 from models import SessionsByTypeForm
 from models import SessionsBySpeakerForm
+from models import SessionQueryForm
+from models import SessionQueryForms
 
 from models import BooleanMessage
 from models import ConflictException
@@ -112,6 +114,11 @@ SESS_POST_REQUEST = endpoints.ResourceContainer(
 
 SESS_TYPE_POST_REQUEST = endpoints.ResourceContainer(
     SessionsByTypeForm,
+    websafeConferenceKey=messages.StringField(1),
+)
+
+SESS_QUERY_REQUEST = endpoints.ResourceContainer(
+    SessionQueryForms,
     websafeConferenceKey=messages.StringField(1),
 )
 
@@ -619,10 +626,10 @@ class ConferenceApi(remote.Service):
 
         # if exists, sort of inequality filter first
         if not inequality_filter:
-            q = q.order(Session.name)
+            q = q.order(Session.sessionName)
         else:
             q = q.order(ndb.GenericProperty(inequality_filter))
-            q = q.order(Session.name)
+            q = q.order(Session.sessionName)
 
         for filtr in filters:
             # TODO: convert date and time strings to date and time objects?
@@ -687,6 +694,15 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
         sessions = Session.query(Session.speaker == request.speaker)
+
+        return SessionForms(
+            items=[self._copySessionToForm(session) \
+            for session in sessions])
+
+    @endpoints.method(SESS_QUERY_REQUEST, SessionForms, path='queryConferenceSessions',
+        http_method='POST', name='queryConferenceSessions')
+    def queryConferenceSessions(self, request):
+        sessions = self._getSessionQuery(request)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
