@@ -619,9 +619,11 @@ class ConferenceApi(remote.Service):
         sessions = Session.query(ancestor=conf_key)
         return sessions
 
-    def _getSessionQuery(self, request):
+    def _getConferenceSessionQuery(self, request):
         """Return formatted query from the submitted filters."""
-        q = Session.query()
+        conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+
+        q = Session.query(ancestor=conf_key)
         inequality_filter, filters = self._formatSessionFilters(request.filters)
 
         # if exists, sort of inequality filter first
@@ -702,7 +704,7 @@ class ConferenceApi(remote.Service):
     @endpoints.method(SESS_QUERY_REQUEST, SessionForms, path='queryConferenceSessions',
         http_method='POST', name='queryConferenceSessions')
     def queryConferenceSessions(self, request):
-        sessions = self._getSessionQuery(request)
+        sessions = self._getConferenceSessionQuery(request)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
