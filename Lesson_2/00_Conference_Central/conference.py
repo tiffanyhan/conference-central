@@ -75,11 +75,22 @@ OPERATORS = {
             'NE':   '!='
             }
 
-FIELDS =    {
+CONF_FIELDS =    {
             'CITY': 'city',
             'TOPIC': 'topics',
             'MONTH': 'month',
             'MAX_ATTENDEES': 'maxAttendees',
+            }
+
+# TODO: define allowed session filters
+SESS_FIELDS = {
+            'SESSION_NAME': 'sessionName',
+            'HIGHLIGHTS': 'highlights',
+            'SPEAKER': 'speaker',
+            'DURATION': 'duration',
+            'TYPE_OF_SESSION': 'typeOfSession',
+            'DATE': 'date',
+            'START_TIME': 'startTime'
             }
 
 # ResourceContainers support path arguments.
@@ -335,7 +346,7 @@ class ConferenceApi(remote.Service):
             filtr = {field.name: getattr(f, field.name) for field in f.all_fields()}
 
             try:
-                filtr["field"] = FIELDS[filtr["field"]]
+                filtr["field"] = CONF_FIELDS[filtr["field"]]
                 filtr["operator"] = OPERATORS[filtr["operator"]]
             except KeyError:
                 raise endpoints.BadRequestException("Filter contains invalid field or operator.")
@@ -588,6 +599,57 @@ class ConferenceApi(remote.Service):
         sf.check_initialized()
         return sf
 
+    def _getConferenceSessions(self, request):
+        # convert websafe key to ndb key
+        conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        # query for all sessions belonging to a conference
+        sessions = Session.query(ancestor=conf_key)
+        return sessions
+
+    def _getSessionQuery(self, request):
+        """Return formatted query from the submitted filters."""
+        q = Session.query()
+        inequality_filter, filters = self._formatSessionFilters(request.filters)
+
+        # if exists, sort of inequality filter first
+        if not inequality_filter:
+            q = q.order(Session.name)
+        else:
+            q = q.order(ndb.GenericProperty(inequality_filter))
+            q = q.order(Session.name)
+
+        for filtr in filters:
+            # TODO: convert date and time strings to date and time objects?
+            formatted_query = ndb.query.FilterNode(filtr['field'], filtr['operator'], filtr['value'])
+            q = q.filter(formatted_query)
+        return q
+
+    def _formatSessionFilters(self, filters):
+        """Parse, check validity and format user supplied filters."""
+        formatted_filters = []
+        inequality_field = None
+
+        for f in filters:
+            filtr = {field.name: getattr(f, field.name) for field in f.all_fields()}
+
+            try:
+                filtr['field'] = SESS_FIELDS[filtr['field']]
+                filtr['operator'] = OPERATORS[filtr['operator']]
+            except KeyError:
+                raise endpoints.BadRequestException('Filter contains invalid field or operator')
+
+            if filtr['operator'] != '=':
+                if inequality_field and inequality_field != filtr['field']:
+                    raise endpoints.BadRequestException('Inequality filter is allowed on only one field.')
+                else:
+                    inequality_field = filtr['field']
+
+            formatted_filters.append(filtr)
+
+        return (inequality_field, formatted_filters)
+
+
+
     @endpoints.method(SESS_POST_REQUEST, websafeConferenceKey, path='conference/{websafeConferenceKey}',
         http_method='POST', name='createSession')
     def createSession(self, request):
@@ -599,15 +661,20 @@ class ConferenceApi(remote.Service):
     @endpoints.method(CONF_GET_REQUEST, SessionForms, path='getConferenceSession',
         http_method='POST', name='getConferenceSessions')
     def getConferenceSessions(self, request):
-        logging.info(request.websafeConferenceKey)
-        conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
-
-        sessions = Session.query(ancestor=conf_key)
+        sessions = self._getConferenceSessions(request)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
             for session in sessions])
 
+    @endpoints.method(CONF_GET_REQUEST, SessionForms, path='getConferenceSessionsByType',
+        http_method='POST', name='getConferenceSessionsByType')
+    def getConferenceSessionsByType(self, request):
+        sessions = _getConferenceSessions(request)
+
+        return SessionForms(
+            items=[self._copySessionToForm(session) \
+            for session in sessions])
 
 # - - - Announcements - - - - - - - - - - - - - - - - - - - -
 
