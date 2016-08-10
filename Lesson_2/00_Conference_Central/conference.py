@@ -12,6 +12,7 @@ created by wesc on 2014 apr 21
 
 __author__ = 'wesc+api@google.com (Wesley Chun)'
 
+import logging
 
 from datetime import datetime
 import json
@@ -41,6 +42,7 @@ from models import ConferenceQueryForms
 
 from models import Session
 from models import SessionForm
+from models import SessionForms
 
 from models import BooleanMessage
 from models import ConflictException
@@ -88,11 +90,6 @@ CONF_GET_REQUEST = endpoints.ResourceContainer(
 
 CONF_POST_REQUEST = endpoints.ResourceContainer(
     ConferenceForm,
-    websafeConferenceKey=messages.StringField(1),
-)
-
-SESS_GET_REQUEST = endpoints.ResourceContainer(
-    message_types.VoidMessage,
     websafeConferenceKey=messages.StringField(1),
 )
 
@@ -580,11 +577,36 @@ class ConferenceApi(remote.Service):
 
         return websafeConferenceKey(data=request.websafeConferenceKey)
 
+    def _copySessionToForm(self, session):
+        """Copy relevant fields from Session to SessionForm."""
+        sf = SessionForm()
+        for field in sf.all_fields():
+            # TODO: convert date and time objects to date and time strings
+            if hasattr(session, field.name):
+                setattr(sf, field.name, getattr(session, field.name))
+
+        sf.check_initialized()
+        return sf
+
     @endpoints.method(SESS_POST_REQUEST, websafeConferenceKey, path='conference/{websafeConferenceKey}',
         http_method='POST', name='createSession')
     def createSession(self, request):
         """Create new session."""
         return self._createSessionObject(request)
+
+# - - - Query Sessions - - - - - - - - - - - - - - - - - - - -
+
+    @endpoints.method(CONF_GET_REQUEST, SessionForms, path='getConferenceSession',
+        http_method='POST', name='getConferenceSessions')
+    def getConferenceSessions(self, request):
+        logging.info(request.websafeConferenceKey)
+        conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+
+        sessions = Session.query(ancestor=conf_key)
+
+        return SessionForms(
+            items=[self._copySessionToForm(session) \
+            for session in sessions])
 
 
 # - - - Announcements - - - - - - - - - - - - - - - - - - - -

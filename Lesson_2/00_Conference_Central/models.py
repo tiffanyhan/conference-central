@@ -132,7 +132,6 @@ class Session(ndb.Model):
     typeOfSession   = ndb.StringProperty()
     date            = ndb.DateProperty()
     startTime       = ndb.TimeProperty()
-    organizerUserId = ndb.StringProperty()
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
@@ -144,6 +143,10 @@ class SessionForm(messages.Message):
     date                = messages.StringField(6)
     startTime           = messages.StringField(7)
     #want to define other fields?
+
+class SessionForms(messages.Message):
+    """SessionForms -- multiple Session outbound form message"""
+    items = messages.MessageField(SessionForm, 1, repeated=True)
 
 class websafeConferenceKey(messages.Message):
     data = messages.StringField(1, required=True)
