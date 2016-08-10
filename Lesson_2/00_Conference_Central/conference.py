@@ -47,7 +47,6 @@ from models import SessionForms
 from models import BooleanMessage
 from models import ConflictException
 from models import StringMessage
-from models import websafeConferenceKey
 
 from settings import WEB_CLIENT_ID
 
@@ -586,7 +585,7 @@ class ConferenceApi(remote.Service):
         session = Session(**data)
         session.put()
 
-        return websafeConferenceKey(data=request.websafeConferenceKey)
+        return self._copySessionToForm(session)
 
     def _copySessionToForm(self, session):
         """Copy relevant fields from Session to SessionForm."""
@@ -650,7 +649,7 @@ class ConferenceApi(remote.Service):
 
 
 
-    @endpoints.method(SESS_POST_REQUEST, websafeConferenceKey, path='conference/{websafeConferenceKey}',
+    @endpoints.method(SESS_POST_REQUEST, SessionForm, path='conference/{websafeConferenceKey}',
         http_method='POST', name='createSession')
     def createSession(self, request):
         """Create new session."""
