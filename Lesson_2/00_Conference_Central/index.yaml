@@ -49,7 +49,7 @@ indexes:
 - kind: Session
   ancestor: yes
   properties:
-  - name: sessionName
+  - name: startTime
 
 - kind: Session
   ancestor: yes

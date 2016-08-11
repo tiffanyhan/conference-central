@@ -685,7 +685,7 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         sessions = self._getConferenceSessions(request)
-        sessions = sessions.order(Session.sessionName)
+        sessions = sessions.order(Session.startTime)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
