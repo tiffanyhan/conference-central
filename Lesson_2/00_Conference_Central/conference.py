@@ -677,6 +677,7 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         sessions = self._getConferenceSessions(request)
+        sessions = sessions.order(Session.sessionName)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
@@ -687,6 +688,7 @@ class ConferenceApi(remote.Service):
     def getConferenceSessionsByType(self, request):
         sessions = self._getConferenceSessions(request)
         sessions = sessions.filter(Session.typeOfSession == request.typeOfSession)
+        sessions = sessions.order(Session.sessionName)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
@@ -696,6 +698,7 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
         sessions = Session.query(Session.speaker == request.speaker)
+        sessions = sessions.order(Session.sessionName)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \

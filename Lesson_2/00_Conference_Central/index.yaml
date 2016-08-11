@@ -42,6 +42,11 @@ indexes:
   - name: name
 
 - kind: Session
+  ancestor: yes
+  properties:
+  - name: sessionName
+
+- kind: Session
   properties:
   - name: speaker
   - name: sessionName
