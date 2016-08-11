@@ -588,6 +588,8 @@ class ConferenceApi(remote.Service):
         if data['date']:
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
         # convert time from string to Time object
+        if data['startTime']:
+            data['startTime'] = datetime.strptime(data['startTime'], '%H:%M').time()
 
         conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         # allocate new Session Id with Profile key as parent
@@ -607,7 +609,10 @@ class ConferenceApi(remote.Service):
         for field in sf.all_fields():
             # TODO: convert date and time objects to date and time strings
             if hasattr(session, field.name):
-                setattr(sf, field.name, getattr(session, field.name))
+                if field.name == 'startTime':
+                    setattr(sf, field.name, getattr(session, field.name).strftime('%H:%M'))
+                else:
+                    setattr(sf, field.name, getattr(session, field.name))
 
         sf.check_initialized()
         return sf

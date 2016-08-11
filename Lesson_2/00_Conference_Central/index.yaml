@@ -42,13 +42,13 @@ indexes:
   - name: name
 
 - kind: Session
-  ancestor: yes
   properties:
+  - name: speaker
   - name: sessionName
 
 - kind: Session
+  ancestor: yes
   properties:
-  - name: speaker
   - name: sessionName
 
 - kind: Session
