@@ -48,23 +48,6 @@ indexes:
   - name: name
 
 - kind: Session
-  ancestor: yes
-  properties:
-  - name: sessionName
-
-- kind: Session
-  ancestor: yes
-  properties:
-  - name: typeOfSession
-  - name: sessionName
-
-- kind: Session
-  properties:
-  - name: speaker
-  - name: sessionName
-
-- kind: Session
-  ancestor: yes
   properties:
   - name: speaker
   - name: sessionName
@@ -73,4 +56,21 @@ indexes:
   ancestor: yes
   properties:
   - name: duration
+  - name: sessionName
+
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: sessionName
+
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: speaker
+  - name: sessionName
+
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: typeOfSession
   - name: sessionName

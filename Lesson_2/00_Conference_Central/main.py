@@ -23,7 +23,16 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
                 'conferenceInfo')
         )
 
+class SetSpeakerAnnouncementHandler(webapp2.RequestHandler):
+    # i think it should be post
+    def post(self):
+        speaker = self.request.get('speaker')
+        sessionNames = self.request.get('sessionNames')
+
+        ConferenceApi._cacheSpeakerAnnouncement(speaker, sessionNames)
+
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),
-    ('/tasks/send_confirmation_email', SendConfirmationEmailHandler)
+    ('/tasks/send_confirmation_email', SendConfirmationEmailHandler),
+    ('/tasks/set_speaker_announcement', SetSpeakerAnnouncementHandler)
 ], debug=True)

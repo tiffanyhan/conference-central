@@ -61,6 +61,7 @@ EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 
 MEMCACHE_ANNOUNCEMENTS_KEY = 'RECENT ANNOUNCEMENTS'
+MEMCACHE_SPEAKER_ANNOUNCEMENTS_KEY = 'SPEAKER ANNOUNCEMENTS'
 
 DEFAULTS = {
     "city": "Default City",
@@ -603,6 +604,22 @@ class ConferenceApi(remote.Service):
         session = Session(**data)
         session.put()
 
+        # if a speaker was provided,
+        if data['speaker']:
+            sessions = Session.query(Session.speaker == data['speaker'])
+            q_count = sessions.count()
+            # and if there is more than one session by this speaker,
+            if q_count > 1:
+                sessionNames = []
+                # get the session names
+                for session in sessions:
+                    sessionNames.append(session.sessionName)
+                # and set an announcement in the memcache featuring speaker and sessions
+                # using a task queue
+                taskqueue.add(params={'speaker': data['speaker'],
+                                      'sessionNames': sessionNames},
+                              url='/tasks/set_speaker_announcement')
+
         return self._copySessionToForm(session)
 
     def _copySessionToForm(self, session):
@@ -758,6 +775,15 @@ class ConferenceApi(remote.Service):
 
         return announcement
 
+    @staticmethod
+    def _cacheSpeakerAnnouncement(speaker, sessionNames):
+        formattedSessionNames = ', '.join(sessionNames)
+
+        announcement = "%s is speaker for the following sessions: %s" % (speaker, formattedSessionNames)
+        memcache.set(MEMCACHE_SPEAKER_ANNOUNCEMENTS_KEY, announcement)
+
+        return announcement
+
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
             path='conference/announcement/get',
@@ -767,8 +793,8 @@ class ConferenceApi(remote.Service):
         # TODO 1
         # return an existing announcement from Memcache or an empty string.
         announcement = ""
-        if memcache.get(MEMCACHE_ANNOUNCEMENTS_KEY):
-            announcement = memcache.get(MEMCACHE_ANNOUNCEMENTS_KEY)
+        if memcache.get(MEMCACHE_SPEAKER_ANNOUNCEMENTS_KEY):
+            announcement = memcache.get(MEMCACHE_SPEAKER_ANNOUNCEMENTS_KEY)
 
         return StringMessage(data=announcement)
 
