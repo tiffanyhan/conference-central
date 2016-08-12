@@ -4,6 +4,9 @@ from google.appengine.api import app_identity
 from google.appengine.api import mail
 from conference import ConferenceApi
 
+from google.appengine.ext import ndb
+from models import Session
+
 class SetAnnouncementHandler(webapp2.RequestHandler):
     def get(self):
         """Set Announcement in Memcache."""
@@ -27,9 +30,22 @@ class SetSpeakerAnnouncementHandler(webapp2.RequestHandler):
     # i think it should be post
     def post(self):
         speaker = self.request.get('speaker')
-        sessionNames = self.request.get('sessionNames')
-
-        ConferenceApi._cacheSpeakerAnnouncement(speaker, sessionNames)
+        conf_key = ndb.Key(urlsafe=self.request.get('websafeConferenceKey'))
+        # check how many sessions by this speaker at given conference
+        sessions = Session.query(ancestor=conf_key)
+        sessions = sessions.filter(Session.speaker == speaker)
+        q_count = sessions.count()
+        # if more than one session,
+        if q_count > 1:
+            # get all sessionNames
+            sessionNames = []
+            for session in sessions:
+                sessionNames.append(session.sessionName)
+            # get the name of the conference
+            conference = conf_key.get()
+            conferenceName = conference.name
+            # pass in speaker name, session names, and conference name
+            ConferenceApi._cacheSpeakerAnnouncement(speaker, sessionNames, conferenceName)
 
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),

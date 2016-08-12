@@ -606,19 +606,9 @@ class ConferenceApi(remote.Service):
 
         # if a speaker was provided,
         if data['speaker']:
-            sessions = Session.query(Session.speaker == data['speaker'])
-            q_count = sessions.count()
-            # and if there is more than one session by this speaker,
-            if q_count > 1:
-                sessionNames = []
-                # get the session names
-                for session in sessions:
-                    sessionNames.append(session.sessionName)
-                # and set an announcement in the memcache featuring speaker and sessions
-                # using a task queue
-                taskqueue.add(params={'speaker': data['speaker'],
-                                      'sessionNames': sessionNames},
-                              url='/tasks/set_speaker_announcement')
+            taskqueue.add(params={'speaker': data['speaker'],
+                                  'websafeConferenceKey': request.websafeConferenceKey},
+                          url='/tasks/set_speaker_announcement')
 
         return self._copySessionToForm(session)
 
@@ -776,10 +766,10 @@ class ConferenceApi(remote.Service):
         return announcement
 
     @staticmethod
-    def _cacheSpeakerAnnouncement(speaker, sessionNames):
-        formattedSessionNames = ', '.join(sessionNames)
+    def _cacheSpeakerAnnouncement(speaker, sessionNames, conferenceName):
+        formattedSessionNames = ', '.join(session for session in sessionNames)
 
-        announcement = "%s is speaker for the following sessions: %s" % (speaker, formattedSessionNames)
+        announcement = "%s is speaker for the following sessions: %s at %s conference" % (speaker, formattedSessionNames, conferenceName)
         memcache.set(MEMCACHE_SPEAKER_ANNOUNCEMENTS_KEY, announcement)
 
         return announcement
