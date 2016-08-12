@@ -130,8 +130,9 @@ class Session(ndb.Model):
     speaker         = ndb.StringProperty()
     duration        = ndb.IntegerProperty()
     typeOfSession   = ndb.StringProperty()
-    date            = ndb.DateProperty()
-    startTime       = ndb.TimeProperty()
+    #date            = ndb.DateProperty()
+    #startTime       = ndb.TimeProperty()
+    dateTime        = ndb.DateTimeProperty()
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
@@ -140,9 +141,10 @@ class SessionForm(messages.Message):
     speaker             = messages.StringField(3)
     duration            = messages.IntegerField(4)
     typeOfSession       = messages.StringField(5)
-    date                = messages.StringField(6)
-    startTime           = messages.StringField(7)
+    #date                = messages.StringField(6)
+    #startTime           = messages.StringField(7)
     #want to define other fields?
+    dateTime            = messages.StringField(6)
 
 class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""

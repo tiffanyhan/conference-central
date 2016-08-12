@@ -92,8 +92,7 @@ SESS_FIELDS = {
             'SPEAKER': 'speaker',
             'DURATION': 'duration',
             'TYPE_OF_SESSION': 'typeOfSession',
-            'DATE': 'date',
-            'START_TIME': 'startTime'
+            'DATE_TIME': 'dateTIme',
             }
 
 # ResourceContainers support path arguments.
@@ -586,11 +585,13 @@ class ConferenceApi(remote.Service):
         # convert dates from strings to Date Objects
         # TODO: convert time from strings to Time objects
         # and convert time string to datetime object instead of time object
-        if data['date']:
-            data['date'] = datetime.strptime(data['date'], "%Y-%m-%d").date()
+        if data['dateTime']:
+            data['dateTime'] = datetime.strptime(data['dateTime'], '%Y-%m-%d %H:%M')
+        #if data['date']:
+            #data['date'] = datetime.strptime(data['date'], "%Y-%m-%d").date()
         # convert time from string to Time object
-        if data['startTime']:
-            data['startTime'] = datetime.strptime(data['startTime'], '%H:%M:%S').time()
+        #if data['startTime']:
+            #data['startTime'] = datetime.strptime(data['startTime'], '%H:%M:%S').time()
 
         conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         # allocate new Session Id with Profile key as parent
@@ -610,10 +611,12 @@ class ConferenceApi(remote.Service):
         for field in sf.all_fields():
             # TODO: convert date and time objects to date and time strings
             if hasattr(session, field.name):
-                if field.name == 'startTime':
+                if field.name == 'dateTime':
                     setattr(sf, field.name, str(getattr(session, field.name)))
-                elif field.name == 'date':
-                    setattr(sf, field.name, str(getattr(session, field.name)))
+                #if field.name == 'startTime':
+                    #setattr(sf, field.name, str(getattr(session, field.name)))
+                #elif field.name == 'date':
+                    #setattr(sf, field.name, str(getattr(session, field.name)))
                 else:
                     setattr(sf, field.name, getattr(session, field.name))
 
@@ -643,6 +646,11 @@ class ConferenceApi(remote.Service):
 
         for filtr in filters:
             # TODO: convert date and time strings to date and time objects?
+            if filtr['field'] == 'dateTime':
+                filtr['value'] = datetime.strptime(filtr['value'], '%Y-%m-%d %H:%M')
+            if filtr["field"] == 'duration':
+                filtr["value"] = int(filtr["value"])
+
             formatted_query = ndb.query.FilterNode(filtr['field'], filtr['operator'], filtr['value'])
             q = q.filter(formatted_query)
         return q
@@ -685,7 +693,7 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         sessions = self._getConferenceSessions(request)
-        sessions = sessions.order(Session.startTime)
+        sessions = sessions.order(Session.sessionName)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
