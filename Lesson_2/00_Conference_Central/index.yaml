@@ -1,5 +1,6 @@
 indexes:
 
+# index that's serving but not working
 - kind: Session
   ancestor: yes
   properties:
@@ -62,6 +63,11 @@ indexes:
   ancestor: yes
   properties:
   - name: sessionName
+
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: speaker
 
 - kind: Session
   ancestor: yes

@@ -56,7 +56,6 @@ from settings import WEB_CLIENT_ID
 
 from utils import getUserId
 
-
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 
@@ -686,8 +685,6 @@ class ConferenceApi(remote.Service):
 
         return (inequality_field, formatted_filters)
 
-
-
     @endpoints.method(SESS_POST_REQUEST, SessionForm, path='conference/{websafeConferenceKey}',
         http_method='POST', name='createSession')
     def createSession(self, request):
@@ -735,6 +732,17 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(session) \
             for session in sessions])
+
+    @endpoints.method(CONF_GET_REQUEST, StringMessage, path='getFeaturedSpeaker',
+        http_method='POST', name='getFeaturedSpeaker')
+    def getFeaturedSpeaker(self, request):
+        conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        conf = conf_key.get()
+
+        featuredSpeakersList = conf.featuredSpeakers
+        formattedSpeakersList = ', '.join(speaker for speaker in featuredSpeakersList)
+
+        return StringMessage(data=formattedSpeakersList)
 
 # - - - Announcements - - - - - - - - - - - - - - - - - - - -
 

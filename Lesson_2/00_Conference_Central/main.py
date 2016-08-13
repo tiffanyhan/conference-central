@@ -44,6 +44,10 @@ class SetSpeakerAnnouncementHandler(webapp2.RequestHandler):
             # get the name of the conference
             conference = conf_key.get()
             conferenceName = conference.name
+
+            # add speaker to featuredSpeakers property of conference
+            conference.featuredSpeakers.append(speaker)
+            conference.put()
             # pass in speaker name, session names, and conference name
             ConferenceApi._cacheSpeakerAnnouncement(speaker, sessionNames, conferenceName)
 
