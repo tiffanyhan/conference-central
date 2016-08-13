@@ -17,7 +17,9 @@ import endpoints
 from protorpc import messages
 from google.appengine.ext import ndb
 
-# needed for conference registration
+
+# - - - all-purpose message forms - - - - - - - - - - - - - - - - -
+
 class BooleanMessage(messages.Message):
     """BooleanMessage-- outbound Boolean value message"""
     data = messages.BooleanField(1)
@@ -26,15 +28,21 @@ class ConflictException(endpoints.ServiceException):
     """ConflictException -- exception mapped to HTTP 409 response"""
     http_status = httplib.CONFLICT
 
+class StringMessage(messages.Message):
+    """StringMessage-- outbound (single) string message"""
+    data = messages.StringField(1, required=True)
+
+
 # - - - Profile classes - - - - - - - - - - - - - - - - -
 
 # replace your existing Profile class with this
 class Profile(ndb.Model):
     """Profile -- User profile object"""
-    displayName = ndb.StringProperty()
-    mainEmail = ndb.StringProperty()
-    teeShirtSize = ndb.StringProperty(default='NOT_SPECIFIED')
+    displayName            = ndb.StringProperty()
+    mainEmail              = ndb.StringProperty()
+    teeShirtSize           = ndb.StringProperty(default='NOT_SPECIFIED')
     conferenceKeysToAttend = ndb.StringProperty(repeated=True)
+    wishlist               = ndb.StringProperty(repeated=True)
 
 
 class ProfileMiniForm(messages.Message):
@@ -45,10 +53,11 @@ class ProfileMiniForm(messages.Message):
 
 class ProfileForm(messages.Message):
     """ProfileForm -- Profile outbound form message"""
-    userId = messages.StringField(1)
-    displayName = messages.StringField(2)
-    mainEmail = messages.StringField(3)
-    teeShirtSize = messages.EnumField('TeeShirtSize', 4)
+    userId          = messages.StringField(1)
+    displayName     = messages.StringField(2)
+    mainEmail       = messages.StringField(3)
+    teeShirtSize    = messages.EnumField('TeeShirtSize', 4)
+    wishlist        = messages.StringField(5, repeated=True)
 
 
 class TeeShirtSize(messages.Enum):
@@ -114,11 +123,6 @@ class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
 
-# - - - Memcache announcements classes - - - - - - - - - - - - - - - - -
-
-class StringMessage(messages.Message):
-    """StringMessage-- outbound (single) string message"""
-    data = messages.StringField(1, required=True)
 
 # - - - Conference sessions - - - - - - - - - - - - - - - - - - - - - -
 

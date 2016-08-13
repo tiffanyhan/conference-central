@@ -109,7 +109,7 @@ SESS_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
-SESS_TYPE_POST_REQUEST = endpoints.ResourceContainer(
+SESS_STR_POST_REQUEST = endpoints.ResourceContainer(
     StringMessage,
     websafeConferenceKey=messages.StringField(1),
 )
@@ -117,6 +117,11 @@ SESS_TYPE_POST_REQUEST = endpoints.ResourceContainer(
 SESS_QUERY_REQUEST = endpoints.ResourceContainer(
     SessionQueryForms,
     websafeConferenceKey=messages.StringField(1),
+)
+
+WISH_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeSessionKey=messages.StringField(1),
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -206,6 +211,45 @@ class ConferenceApi(remote.Service):
             path='profile', http_method='POST', name='saveProfile')
     def saveProfile(self, request):
         return self._doProfile(save_request = request)
+
+    @endpoints.method(WISH_GET_REQUEST, ProfileForm, path='addSessionToWishList',
+        http_method='POST', name='addSessionToWishlist')
+    def addSessionToWishlist(self, request):
+        # i think keys in wishlist should be websafe
+        profile = self._getProfileFromUser()
+
+        if request.websafeSessionKey in profile.wishlist:
+            raise endpoints.BadRequestException('This item is already in your wishlist.')
+
+        profile.wishlist.append(request.websafeSessionKey)
+        profile.put()
+
+        return self._copyProfileToForm(profile)
+
+    @endpoints.method(message_types.VoidMessage, StringMessage, path='getSessionsInWishlist',
+        http_method='POST', name='getSessionsInWishlist')
+    def getSessionsInWishlist(self, request):
+        profile = self._getProfileFromUser()
+        formattedWishlist = ', '.join(item for item in profile.wishlist)
+        if formattedWishlist == "":
+            formattedWishlist = "You have no items in your wishlist."
+
+        return StringMessage(data=formattedWishlist)
+
+    @endpoints.method(WISH_GET_REQUEST, ProfileForm, path='deleteSessionInWishlist',
+        http_method='POST', name='deleteSessionInWishlist')
+    def deleteSessionInWishlist(self, request):
+        profile = self._getProfileFromUser()
+
+        if request.websafeSessionKey not in profile.wishlist:
+            raise endpoints.BadRequestException('Unable to delete because this item was not in your wishlist.')
+
+        index = profile.wishlist.index(request.websafeSessionKey)
+        profile.wishlist.pop(index)
+        profile.put()
+
+        return self._copyProfileToForm(profile)
+
 
 # - - - Conference objects - - - - - - - - - - - - - - - - -
 
@@ -701,7 +745,7 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session) \
             for session in sessions])
 
-    @endpoints.method(SESS_TYPE_POST_REQUEST, SessionForms, path='getConferenceSessionsByType',
+    @endpoints.method(SESS_STR_POST_REQUEST, SessionForms, path='getConferenceSessionsByType',
         http_method='POST', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         sessions = self._getConferenceSessions(request)
