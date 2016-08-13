@@ -43,8 +43,6 @@ from models import ConferenceQueryForms
 from models import Session
 from models import SessionForm
 from models import SessionForms
-from models import SessionsByTypeForm
-from models import SessionsBySpeakerForm
 from models import SessionQueryForm
 from models import SessionQueryForms
 
@@ -112,7 +110,7 @@ SESS_POST_REQUEST = endpoints.ResourceContainer(
 )
 
 SESS_TYPE_POST_REQUEST = endpoints.ResourceContainer(
-    SessionsByTypeForm,
+    StringMessage,
     websafeConferenceKey=messages.StringField(1),
 )
 
@@ -707,17 +705,17 @@ class ConferenceApi(remote.Service):
         http_method='POST', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         sessions = self._getConferenceSessions(request)
-        sessions = sessions.filter(Session.typeOfSession == request.typeOfSession)
+        sessions = sessions.filter(Session.typeOfSession == request.data)
         sessions = sessions.order(Session.sessionName)
 
         return SessionForms(
             items=[self._copySessionToForm(session) \
             for session in sessions])
 
-    @endpoints.method(SessionsBySpeakerForm, SessionForms, path='getSessionsBySpeaker',
+    @endpoints.method(StringMessage, SessionForms, path='getSessionsBySpeaker',
         http_method='POST', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
-        sessions = Session.query(Session.speaker == request.speaker)
+        sessions = Session.query(Session.speaker == request.data)
         sessions = sessions.order(Session.sessionName)
 
         return SessionForms(
@@ -740,7 +738,10 @@ class ConferenceApi(remote.Service):
         conf = conf_key.get()
 
         featuredSpeakersList = conf.featuredSpeakers
-        formattedSpeakersList = ', '.join(speaker for speaker in featuredSpeakersList)
+        if featuredSpeakersList:
+            formattedSpeakersList = ', '.join(speaker for speaker in featuredSpeakersList)
+        else:
+            formattedSpeakersList = "No featured speakers for this conference."
 
         return StringMessage(data=formattedSpeakersList)
 
