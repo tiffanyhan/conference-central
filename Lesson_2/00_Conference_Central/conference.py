@@ -212,7 +212,7 @@ class ConferenceApi(remote.Service):
     def saveProfile(self, request):
         return self._doProfile(save_request = request)
 
-    @endpoints.method(WISH_GET_REQUEST, ProfileForm, path='addSessionToWishList',
+    @endpoints.method(WISH_GET_REQUEST, ProfileForm, path='addSessionToWishlist/{websafeSessionKey}',
         http_method='POST', name='addSessionToWishlist')
     def addSessionToWishlist(self, request):
         # i think keys in wishlist should be websafe
@@ -236,7 +236,7 @@ class ConferenceApi(remote.Service):
 
         return StringMessage(data=formattedWishlist)
 
-    @endpoints.method(WISH_GET_REQUEST, ProfileForm, path='deleteSessionInWishlist',
+    @endpoints.method(WISH_GET_REQUEST, ProfileForm, path='deleteSessionInWishlist/{websafeSessionKey}',
         http_method='POST', name='deleteSessionInWishlist')
     def deleteSessionInWishlist(self, request):
         profile = self._getProfileFromUser()
@@ -426,14 +426,14 @@ class ConferenceApi(remote.Service):
         return self._createConferenceObject(request)
 
     @endpoints.method(CONF_POST_REQUEST, ConferenceForm,
-            path='conference/{websafeConferenceKey}',
+            path='updateConference/{websafeConferenceKey}',
             http_method='PUT', name='updateConference')
     def updateConference(self, request):
         """Update conference w/provided fields & return w/updated info."""
         return self._updateConferenceObject(request)
 
     @endpoints.method(CONF_GET_REQUEST, ConferenceForm,
-            path='conference/{websafeConferenceKey}',
+            path='getConference/{websafeConferenceKey}',
             http_method='GET', name='getConference')
     def getConference(self, request):
         """Return requested conference (by websafeConferenceKey)."""
@@ -595,7 +595,7 @@ class ConferenceApi(remote.Service):
         return self._conferenceRegistration(request)
 
     @endpoints.method(CONF_GET_REQUEST, BooleanMessage,
-        path='unregisterFromConference',
+        path='unregisterFromConference/{websafeConferenceKey}',
         http_method='POST', name='unregisterFromConference')
     def unregisterFromConference(self, request):
         return self._conferenceRegistration(request, reg=False)
@@ -727,7 +727,7 @@ class ConferenceApi(remote.Service):
 
         return (inequality_field, formatted_filters)
 
-    @endpoints.method(SESS_POST_REQUEST, SessionForm, path='conference/{websafeConferenceKey}',
+    @endpoints.method(SESS_POST_REQUEST, SessionForm, path='createSession/{websafeConferenceKey}',
         http_method='POST', name='createSession')
     def createSession(self, request):
         """Create new session."""
@@ -735,7 +735,7 @@ class ConferenceApi(remote.Service):
 
 # - - - Query Sessions - - - - - - - - - - - - - - - - - - - -
 
-    @endpoints.method(CONF_GET_REQUEST, SessionForms, path='getConferenceSession',
+    @endpoints.method(CONF_GET_REQUEST, SessionForms, path='getConferenceSessions/{websafeConferenceKey}',
         http_method='POST', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         sessions = self._getConferenceSessions(request)
@@ -745,7 +745,7 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session) \
             for session in sessions])
 
-    @endpoints.method(SESS_STR_POST_REQUEST, SessionForms, path='getConferenceSessionsByType',
+    @endpoints.method(SESS_STR_POST_REQUEST, SessionForms, path='getConferenceSessionsByType/{websafeConferenceKey}',
         http_method='POST', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         sessions = self._getConferenceSessions(request)
@@ -766,7 +766,7 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session) \
             for session in sessions])
 
-    @endpoints.method(SESS_QUERY_REQUEST, SessionForms, path='queryConferenceSessions',
+    @endpoints.method(SESS_QUERY_REQUEST, SessionForms, path='queryConferenceSessions/{websafeConferenceKey}',
         http_method='POST', name='queryConferenceSessions')
     def queryConferenceSessions(self, request):
         sessions = self._getConferenceSessionQuery(request)
@@ -775,7 +775,7 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session) \
             for session in sessions])
 
-    @endpoints.method(CONF_GET_REQUEST, StringMessage, path='getFeaturedSpeaker',
+    @endpoints.method(CONF_GET_REQUEST, StringMessage, path='getFeaturedSpeaker/{websafeConferenceKey}',
         http_method='POST', name='getFeaturedSpeaker')
     def getFeaturedSpeaker(self, request):
         conf_key = ndb.Key(urlsafe=request.websafeConferenceKey)

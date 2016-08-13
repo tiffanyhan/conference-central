@@ -559,8 +559,8 @@ conferenceApp.controllers.controller('ConferenceDetailCtrl', function ($scope, $
      */
     $scope.init = function () {
         $scope.loading = true;
-        gapi.client.conference.getConference({
-            websafeConferenceKey: $routeParams.websafeConferenceKey
+        gapi.client
+            websafeConferenceKey: $routeParams.websafeConfer.conference.getConference({enceKey
         }).execute(function (resp) {
             $scope.$apply(function () {
                 $scope.loading = false;
